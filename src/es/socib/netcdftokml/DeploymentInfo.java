@@ -24,7 +24,6 @@ public class DeploymentInfo {
 	 */
 	private String latitude;
 	
-	
 	/**
 	 * Construct a new {@link DeploymentInfo}
 	 * 

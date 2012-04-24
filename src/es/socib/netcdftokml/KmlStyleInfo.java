@@ -7,7 +7,6 @@ import de.micromata.opengis.kml.v_2_2_0.BalloonStyle;
 import de.micromata.opengis.kml.v_2_2_0.Document;
 import de.micromata.opengis.kml.v_2_2_0.Icon;
 import de.micromata.opengis.kml.v_2_2_0.IconStyle;
-import de.micromata.opengis.kml.v_2_2_0.LineStyle;
 import de.micromata.opengis.kml.v_2_2_0.Style;
 
 /**
@@ -16,7 +15,7 @@ import de.micromata.opengis.kml.v_2_2_0.Style;
  */
 public class KmlStyleInfo {
 	
-	private static final String DEFAULT_LINE_COLOR ="#DDDDDD";
+	private static final String DEFAULT_LINE_COLOR ="bbbb0000";
 	
 	private static final String DEFAULT_DATE_FORMAT_PATERN = "yyyy-MM-dd HH:mm:ss";
 	
@@ -37,7 +36,7 @@ public class KmlStyleInfo {
 	private String dateFormatPattern;
 	
 	/**
-	 * lineStyleColor the kml line style color .
+	 * lineStyleColor the kml line style color. aabbggrr format
 	 */
 	private String lineStyleColor;
 	
@@ -105,6 +104,17 @@ public class KmlStyleInfo {
 		}
 	}
 
+	public String getKmlTitleName(String threddsLink) {
+		
+		if (null != threddsLink && !"".equals(threddsLink)){
+			
+			return "<a href=\"" + threddsLink + "\" title=\"Access data via OPeNDAP\">" + kmlTitleName + "</a>";
+			
+		}
+		
+		return kmlTitleName;
+	}
+	
 	public String getKmlTitleName() {
 		return kmlTitleName;
 	}
@@ -135,35 +145,30 @@ public class KmlStyleInfo {
 	
 	public void setKmlDocumentStyle(Document document) {
 		
+		//Setting up balloon style
+		final BalloonStyle balloonstyle = new BalloonStyle();
+		balloonstyle.setId("ID");
+		balloonstyle.setBgColor("ffffffff");
+		balloonstyle.setTextColor("ff000000");
+		
 		final Style styleForHomeIcon = new Style();
 		document.getStyleSelector().add(styleForHomeIcon);
 		styleForHomeIcon.setId("styleForHomeIcon");
+		styleForHomeIcon.setBalloonStyle(balloonstyle);
 		
 		final Style styleForRegularIcon = new Style();
 		document.getStyleSelector().add(styleForRegularIcon);
 		styleForRegularIcon.setId("styleForRegularIcon");
+		styleForRegularIcon.setBalloonStyle(balloonstyle);
 		
 		final Style styleForFinalIcon = new Style();
 		document.getStyleSelector().add(styleForFinalIcon);
 		styleForFinalIcon.setId("styleForFinalIcon");
-
-		//Setting up line style
-		final LineStyle linestyle = new LineStyle();
-		styleForHomeIcon.setLineStyle(linestyle);
-		styleForRegularIcon.setLineStyle(linestyle);
-		styleForFinalIcon.setLineStyle(linestyle);
-		linestyle.setId("lineStyleId");
-		linestyle.setColor(lineStyleColor);
-		linestyle.setWidth(4.0d);
-
-		//Setting up balloon style
-		final BalloonStyle balloonstyle = new BalloonStyle();
-		styleForHomeIcon.setBalloonStyle(balloonstyle);
-		styleForRegularIcon.setBalloonStyle(balloonstyle);
 		styleForFinalIcon.setBalloonStyle(balloonstyle);
-		balloonstyle.setId("ID");
-		balloonstyle.setBgColor("ffffffff");
-		balloonstyle.setTextColor("ff000000");
+
+		// Line style 
+		final Style lineStyle = document.createAndAddStyle().withId("lineStyleId");
+		lineStyle.createAndSetLineStyle().withColor(lineStyleColor).withWidth(4.0d);
 		
 		//Setting up Home icon style
 		final IconStyle homeIconStyle = new IconStyle();

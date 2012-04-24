@@ -54,10 +54,6 @@ public class KmlManager {
 	
 	private static final String FT_TRAJECTORY_PROFILE = "trajectoryProfile";
 	
-//	private static final String HOME_ICON_URL = "gl-gohome-128x128.png";
-	
-//	private final String[] colorList = { "8f00adff", "8fff0000", "8f0000ff","8f00ff00", };
-	
 	private AdditionalInfo additionalInfo;
 	
 	private NetcdfDataset netcdfDataset;
@@ -167,7 +163,7 @@ public class KmlManager {
 			
 			kml = new Kml();
 			final Document document = new Document();
-			String title = kmlStyleInfo.getKmlTitleName();
+			String title = kmlStyleInfo.getKmlTitleName(additionalInfo.getThreddsLink());
 			kml.setFeature(document);
 			document.setName(title);
 			document.setOpen(true);
@@ -219,8 +215,10 @@ public class KmlManager {
 				
 				StringBuffer placemarkBalloonDescription = new StringBuffer();
 				placemarkBalloonDescription.append("<h3>" + title + "</h3>");
-				placemarkBalloonDescription.append("<br> <strong>Time:</strong>" + format(date.getTime(), kmlStyleInfo.getDateFormatPattern()));
-				placemarkBalloonDescription.append("<br> <strong>Lat:</strong> " + latBigDecimal.toPlainString() + "&nbsp;<strong>Lon:</strong> " + lonBigDecimal.toPlainString());
+				placemarkBalloonDescription.append("<br> <strong>Time: </strong>" + format(date.getTime(), kmlStyleInfo.getDateFormatPattern()));
+				placemarkBalloonDescription.append("<br> <strong>Position: </strong>" + PositionManager.getLatGeoCoordinate(latBigDecimal) + " " + PositionManager.getLonGeoCoordinate(lonBigDecimal));
+				
+//				placemarkBalloonDescription.append("<br> <strong>Lat:</strong> " + latBigDecimal.toPlainString() + "&nbsp;<strong>Lon:</strong> " + lonBigDecimal.toPlainString());
 				placemarkBalloonDescription.append("<br>");
 				
 				logger.debug("Time: " + format(date.getTime(), kmlStyleInfo.getDateFormatPattern()) + " Lat: " + latBigDecimal.toEngineeringString() + " Lon: " +  lonBigDecimal.toPlainString());
@@ -244,6 +242,11 @@ public class KmlManager {
 					logger.debug("Data from " + variable.getFullName()  + " " + data);
 					
 				}
+				
+				if (null != additionalInfo.getThreddsLink() && !"".equals(additionalInfo.getThreddsLink())){
+					placemarkBalloonDescription.append("<br> <strong>TDS link:</strong> <a href=\"" + additionalInfo.getThreddsLink() + "\" title=\"OPeNDAP link\"> OPeNDAP link</a>");
+				}
+				
 				
 				final Placemark placemarkBalloon = new Placemark();
 				placemarkBalloon.setDescription(placemarkBalloonDescription.toString());
@@ -289,10 +292,14 @@ public class KmlManager {
 			
 			final Placemark placemarkLine = new Placemark();
 			document.getFeature().add(placemarkLine);
-			placemarkLine.setStyleUrl("#lineStyleId");
 			final LineString linestring = new LineString();
 			placemarkLine.setGeometry(linestring);
+			linestring.setExtrude(false);
+			linestring.setTessellate(true);
 			linestring.setCoordinates(coordinateList);
+			//Setting up line style
+			
+			placemarkLine.setStyleUrl("#lineStyleId");
 		
 		} finally {
 			
@@ -304,7 +311,7 @@ public class KmlManager {
 		
 		return kml;
 	}
-	
+
 	/**
 	 * Add the deployment position and time to the kml document. Also add the position
 	 * to the coordinate list, needed to the kml line string
@@ -320,15 +327,14 @@ public class KmlManager {
 		Variable timeVariable = coordinateVariableMap.get(AxisType.Time);
 		
 		String time = additionalInfo.getDeploymentInfo().getTime();
-		String lon = additionalInfo.getDeploymentInfo().getLongitude();
-		String lat = additionalInfo.getDeploymentInfo().getLatitude();
+		BigDecimal lonBigDecimal = new BigDecimal(additionalInfo.getDeploymentInfo().getLongitude());
+		BigDecimal latBigDecimal = new BigDecimal(additionalInfo.getDeploymentInfo().getLatitude());
 		
 		Date date = DateUnit.getStandardOrISO(time);
 		
 		StringBuffer placemarkBalloonDescription = new StringBuffer();
-		placemarkBalloonDescription.append("<h3>" + additionalInfo.getKmlStyleInfo().getKmlTitleName() + "</h3>");
-		placemarkBalloonDescription.append("<br> <strong>Time:</strong>" + format(date.getTime(), additionalInfo.getKmlStyleInfo().getDateFormatPattern()));
-		placemarkBalloonDescription.append("<br> <strong>Lat:</strong> " + lat + "&nbsp;<strong>Lon:</strong> " + lon);
+		placemarkBalloonDescription.append("<h3>" + additionalInfo.getKmlStyleInfo().getKmlTitleName(additionalInfo.getThreddsLink()) + "</h3>");
+		placemarkBalloonDescription.append("<br> <strong>Position: </strong>" + PositionManager.getLatGeoCoordinate(latBigDecimal) + " " + PositionManager.getLonGeoCoordinate(lonBigDecimal));
 		placemarkBalloonDescription.append("<br>");
 		
 		final Placemark placemarkBalloon = new Placemark();
@@ -338,9 +344,9 @@ public class KmlManager {
 		placemarkBalloon.setGeometry(point);
 		final List<Coordinate> coord = new ArrayList<Coordinate>();
 		point.setCoordinates(coord);
-		coord.add(new Coordinate(Float.valueOf(lon), Float.valueOf(lat)));
+		coord.add(new Coordinate(lonBigDecimal.floatValue(), latBigDecimal.floatValue()));
 		
-		coordinateList.add(new Coordinate(Float.valueOf(lon), Float.valueOf(lat)));
+		coordinateList.add(new Coordinate(lonBigDecimal.floatValue(), latBigDecimal.floatValue()));
 		
 		TimeSpan ts = new TimeSpan();
 		String beginTimeString = format(date.getTime(), "yyyy-MM-dd HH:mm:ss").replace(" ", "T");
