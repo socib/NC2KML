@@ -142,7 +142,7 @@ public class KmlManager {
 	/**
 	 * Create a {@link Kml} object representation of the NetCDF file of type trajectory or trajectoryProfile.
 	 * 
-	 * First add the deployment position, it not null.  Loop over the time array to read the variable data, it
+	 * First add the deployment position, if not null.  Loop over the time array to read the variable data, it
 	 * can be of one dimension (time) or two dimensions (time, level). If have two dimensions the value
 	 * displayed the current time index and the level zero, array.get(i,0).
 	 * 

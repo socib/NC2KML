@@ -253,7 +253,7 @@ public class AncillaryVariablesManager {
 	 * If the {@link Array} contains more than one quality control.
 	 * 
 	 * @param ancillaryVariablesValues the {@link Array} of ancillary variable names.
-	 * @return the first quality control variable name from the {@link Array} of ancillary  variable names, if exists. Otherwise return null.
+	 * @return the first quality control variable name from the {@link Array} of ancillary variable names, if exists. Otherwise return null.
 	 */
 	private static String findQCAncillaryVariableName(Array ancillaryVariablesValues){
 		
