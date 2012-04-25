@@ -3,12 +3,18 @@
  */
 package es.socib.netcdftokml;
 
+import org.apache.log4j.Logger;
+
 /**
  * @author ksebastian
  *
  */
 public class DeploymentInfo {
-
+	
+	/**
+	 * logger the logger instance
+	 */
+	private static Logger logger = Logger.getLogger("processing");
 	/**
 	 * time The String time in UDUNITS format "n seconds since YYYY-MM-DD HH:MM:SS" 
 	 */
@@ -31,10 +37,18 @@ public class DeploymentInfo {
 	 * @param longitude the {@link String} longitude in degrees east.
 	 * @param latitude the {@link String} latitude in degrees north.
 	 */
-	public DeploymentInfo(String time, String longitude, String latitude) {
+	private DeploymentInfo(String time, String longitude, String latitude) {
 		this.time = time;
 		this.longitude = longitude;
 		this.latitude = latitude;
+	}
+	
+	public static DeploymentInfo createDeploymentInfo(String time, String longitude, String latitude){
+		if (null == time || null == longitude || null == latitude){
+			logger.warn("createDeploymentInfo() -- One or more of the needed parameters are null. Null DeploymentInfo was returned"); 
+			return null;
+		}else
+			return new DeploymentInfo(time, longitude, latitude);
 	}
 
 	public String getTime() {
