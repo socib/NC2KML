@@ -104,6 +104,13 @@ public class KmlStyleInfo {
 		}
 	}
 
+	/**
+	 * Get the KML title name. If thredds link isn't null or empty return
+	 * the KML title name linked to the opendap.
+	 * 
+	 * @param threddsLink the opendap link to the NetCDF data
+	 * @return the KML title name
+	 */
 	public String getKmlTitleName(String threddsLink) {
 		
 		if (null != threddsLink && !"".equals(threddsLink)){

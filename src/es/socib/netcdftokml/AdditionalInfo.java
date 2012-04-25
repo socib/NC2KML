@@ -48,6 +48,15 @@ public class AdditionalInfo {
 		return threddsLink;
 	}
 	
+	public boolean hasThreddsLink(){
+		
+		if (null != this.threddsLink && !"".equals(this.threddsLink)){
+			return true;
+		}
+		
+		return false;
+	}
+	
 	public boolean displayAncillaryVariables() {
 		return displayAncillaryVariables;
 	}

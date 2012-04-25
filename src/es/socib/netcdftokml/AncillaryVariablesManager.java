@@ -45,14 +45,25 @@ public class AncillaryVariablesManager {
 	
 	private Map<Variable, Array> mapVariableAncillaryVariableNames;
 	
-	private Array qcLatVariable;
+	private Array qcLatVariableArray;
 	
-	private Array qcLonVariable;
+	private Array qcLonVariableArray;
 	
 	private Integer latestGoodDataIdx;
 
 	private Integer firstGoodDataIdx;
 	
+	/**
+	 * Constructs a new {@link AncillaryVariablesManager}. Initialize:
+	 * 		The latitude and longitude quality control array data.
+	 * 		The variable list without the ancillary and coordinate variables.
+	 * 		The ancillary variable list, only with the ancillary variables.
+	 * 		The map with the variable as key and the array of ancillary variable names as value.
+	 * 		The first and last good position index.
+	 * 
+	 * @param netcdfDataset
+	 * @param coordinateAxisMap
+	 */
 	public AncillaryVariablesManager(NetcdfDataset netcdfDataset,  Map<AxisType, VariableDS> coordinateAxisMap){
 		
 		this.netcdfDataset = netcdfDataset;
@@ -65,15 +76,15 @@ public class AncillaryVariablesManager {
 		String qcLonVariableName = findQCAncillaryVariableName(findAncillaryVariableNames(coordinateAxisMap.get(AxisType.Lon)));
 		
 		if (null != qcLatVariableName){
-			qcLatVariable = readVariable(qcLatVariableName);
+			qcLatVariableArray = readVariable(qcLatVariableName);
 		} else {
-			qcLatVariable = null;
+			qcLatVariableArray = null;
 		}
 		
 		if (null != qcLonVariableName){
-			qcLonVariable = readVariable(qcLonVariableName);
+			qcLonVariableArray = readVariable(qcLonVariableName);
 		} else {
-			qcLonVariable = null;
+			qcLonVariableArray = null;
 		}
 		
 		searchLastAndFirstGoodDataIdx();
@@ -87,15 +98,15 @@ public class AncillaryVariablesManager {
 	 */
 	private void searchLastAndFirstGoodDataIdx() {
 		
-		if(null == qcLatVariable || null == qcLonVariable){
+		if(null == qcLatVariableArray || null == qcLonVariableArray){
 			latestGoodDataIdx = firstGoodDataIdx = null;
 		}
 		
 		this.latestGoodDataIdx = 0;
-		this.firstGoodDataIdx = (int) qcLatVariable.getSize();
+		this.firstGoodDataIdx = (int) qcLatVariableArray.getSize();
 		
-		for (int i =  0; i < (int) qcLatVariable.getSize(); i++){
-			if (qcLatVariable.getInt(i) < PROBABLY_GOOD_DATA || qcLonVariable.getInt(i) < PROBABLY_GOOD_DATA){
+		for (int i =  0; i < (int) qcLatVariableArray.getSize(); i++){
+			if (qcLatVariableArray.getInt(i) < PROBABLY_GOOD_DATA || qcLonVariableArray.getInt(i) < PROBABLY_GOOD_DATA){
 				if (latestGoodDataIdx < i){
 					latestGoodDataIdx = i;
 				}
@@ -116,21 +127,21 @@ public class AncillaryVariablesManager {
 	 * 
 	 * @param currentIdx the current idx
 	 * @return the next position if the position doesn't have quality controls applied or there aren't more good positions.
-	 * Return the next good position if exists.
+	 * Otherwise return the next good position if exists.
 	 */
 	public int nextGoodDataPositionIdx(int currentIdx) {
 		
 		int nextGoodDataIdx = currentIdx + 1;
 		
-		if(null == qcLatVariable || null == qcLonVariable){
+		if(null == qcLatVariableArray || null == qcLonVariableArray){
 			return nextGoodDataIdx;
 		}
 		
 		Integer qcLatValue;
 		Integer qcLonValue;
 		for (int i = nextGoodDataIdx; i <= latestGoodDataIdx; i ++){
-			qcLatValue = qcLatVariable.getInt(nextGoodDataIdx);
-			qcLonValue = qcLonVariable.getInt(nextGoodDataIdx);
+			qcLatValue = qcLatVariableArray.getInt(nextGoodDataIdx);
+			qcLonValue = qcLonVariableArray.getInt(nextGoodDataIdx);
 			if (qcLatValue >= PROBABLY_GOOD_DATA && qcLonValue >= PROBABLY_GOOD_DATA){
 				nextGoodDataIdx++;
 			} else {
@@ -366,12 +377,12 @@ public class AncillaryVariablesManager {
 		
 		int i = ima.getCurrentCounter()[0];
 		
-		if( null == qcLatVariable || null == qcLonVariable){
+		if( null == qcLatVariableArray || null == qcLonVariableArray){
 			return true;
 		}
 		
-		Byte qcLatValue = qcLatVariable.getByte(i);
-		Byte qcLonValue = qcLonVariable.getByte(i);
+		Byte qcLatValue = qcLatVariableArray.getByte(i);
+		Byte qcLonValue = qcLonVariableArray.getByte(i);
 		
 		if (qcLatValue.intValue() >= PROBABLY_GOOD_DATA || qcLonValue.intValue() >= PROBABLY_GOOD_DATA){
 			return false;

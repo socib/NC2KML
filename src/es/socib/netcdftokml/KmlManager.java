@@ -90,12 +90,14 @@ public class KmlManager {
 			
 			logger.info("Initializing the Kml manager");
 			
-			this.additionalInfo = additionalInfo;
+			// Open the NetCDF file
 			this.netCdfFileLocation = netCdfFileLocation;
 			netcdfDataset = NetcdfDataset.openDataset(this.netCdfFileLocation);
 		
+			// Check that the files is compliant with the defined specifications
 			checkFile(netcdfDataset);
 			
+			// Set the kml document name. Used as the balloon title name also.
 			String kmlDocumentName;
 			if (null != netcdfDataset.findGlobalAttribute(AttributesNamesAndValues.TITLE)){
 				kmlDocumentName = netcdfDataset.findGlobalAttribute(AttributesNamesAndValues.TITLE).getStringValue();
@@ -103,6 +105,8 @@ public class KmlManager {
 				kmlDocumentName = "Trajectory data";
 			}
 			
+			// Set the additional info. If null then set to the default values
+			this.additionalInfo = additionalInfo;
 			if (null == this.additionalInfo){
 				KmlStyleInfo kmlStyleInfo = new KmlStyleInfo(kmlDocumentName, null, null, null, null, null, null);
 				this.additionalInfo = new AdditionalInfo(null, kmlStyleInfo, null, false);
@@ -113,13 +117,18 @@ public class KmlManager {
 				this.additionalInfo.getKmlStyleInfo().setKmlTitleName(kmlDocumentName);
 			}
 			
+			// Get the coordinate variable list
 			coordinateVariableMap = getCoordinateVariableList(netcdfDataset);
+			
+			// Initialize the ancillary variables manager
 			ancillaryVariablesMananger = new AncillaryVariablesManager(netcdfDataset, coordinateVariableMap);
+			
+			// Retrieve the variable list whitout the ancillary variable
 			variableListWithoutAncillaryVariables = ancillaryVariablesMananger.getVariableListWithotAncillaryVariables();
+//			variableListWithoutAncillaryVariables.removeAll(netcdfDataset.getCoordinateAxes());
+			
 //			ancillaryVariableList = ancillaryVariablesMananger.getAncillaryVariableList();
 			
-			// Remove all coordinate variables
-			variableListWithoutAncillaryVariables.removeAll(netcdfDataset.getCoordinateAxes());
 			// Find cf role variable, if exists remove it from the variableListWithotAncillaryVariables
 			Variable cfRole = findCFRoleVariable(variableListWithoutAncillaryVariables);
 			if (null != cfRole){
@@ -159,16 +168,18 @@ public class KmlManager {
 
 		try {
 			
-			KmlStyleInfo kmlStyleInfo =  additionalInfo.getKmlStyleInfo();
 			
+			// Create and initialize the kml object
 			kml = new Kml();
 			final Document document = new Document();
+			KmlStyleInfo kmlStyleInfo =  additionalInfo.getKmlStyleInfo();
 			String title = kmlStyleInfo.getKmlTitleName(additionalInfo.getThreddsLink());
 			kml.setFeature(document);
 			document.setName(title);
 			document.setOpen(true);
 			kmlStyleInfo.setKmlDocumentStyle(document);
 			
+			// Retrieve the time, latitude and longitude coordinate data
 			Variable timeVariable = coordinateVariableMap.get(AxisType.Time);
 			Variable lonVariable = coordinateVariableMap.get(AxisType.Lon);
 			Variable latVariable = coordinateVariableMap.get(AxisType.Lat);
@@ -176,6 +187,7 @@ public class KmlManager {
 			Array lonArrayData = lonVariable.read();
 			Array latArrayData = latVariable.read();
 			
+			// The coordinate list needed to generate the line string. Represent the platform trajectory.
 			List<Coordinate> coordinateList = new ArrayList<Coordinate>();
 			
 			// Retrieve the first good data index
@@ -202,6 +214,7 @@ public class KmlManager {
 			timeIndex1D.set(firstGoodDataIdx);
 			for (int i = firstGoodDataIdx; i <= latestGoodDataIdx; i++){
 				
+				// It doesn't add to the kml bad positions
 				if (!ancillaryVariablesMananger.isGoodDataPosition(timeIndex1D)){
 					logger.debug("Bad data");
 					timeIndex1D.incr();
@@ -213,16 +226,16 @@ public class KmlManager {
 				BigDecimal lonBigDecimal = new BigDecimal(lonArrayData.getObject(timeIndex1D).toString());
 				BigDecimal latBigDecimal = new BigDecimal(latArrayData.getObject(timeIndex1D).toString());
 				
+				// Add the header description (Title, time and position)
 				StringBuffer placemarkBalloonDescription = new StringBuffer();
 				placemarkBalloonDescription.append("<h3>" + title + "</h3>");
 				placemarkBalloonDescription.append("<br> <strong>Time: </strong>" + format(date.getTime(), kmlStyleInfo.getDateFormatPattern()));
 				placemarkBalloonDescription.append("<br> <strong>Position: </strong>" + PositionManager.getLatGeoCoordinate(latBigDecimal) + " " + PositionManager.getLonGeoCoordinate(lonBigDecimal));
-				
-//				placemarkBalloonDescription.append("<br> <strong>Lat:</strong> " + latBigDecimal.toPlainString() + "&nbsp;<strong>Lon:</strong> " + lonBigDecimal.toPlainString());
 				placemarkBalloonDescription.append("<br>");
 				
 				logger.debug("Time: " + format(date.getTime(), kmlStyleInfo.getDateFormatPattern()) + " Lat: " + latBigDecimal.toEngineeringString() + " Lon: " +  lonBigDecimal.toPlainString());
 				
+				// Add the variable name and current value to the description
 				for (Variable variable : variableListWithoutAncillaryVariables){
 					
 					String data;
@@ -236,18 +249,20 @@ public class KmlManager {
 						continue;
 					}
 					
-//					String longNameValue = variable.findAttributeIgnoreCase(AttributesNamesAndValues.LONG_NAME).getStringValue();
 					placemarkBalloonDescription.append("<br><strong>" + variable.getFullName() + ": </strong>" + data);
 					
 					logger.debug("Data from " + variable.getFullName()  + " " + data);
 					
 				}
 				
-				if (null != additionalInfo.getThreddsLink() && !"".equals(additionalInfo.getThreddsLink())){
+				// Add the opendap link 
+				if (additionalInfo.hasThreddsLink()){
 					placemarkBalloonDescription.append("<br> <strong>TDS link:</strong> <a href=\"" + additionalInfo.getThreddsLink() + "\" title=\"OPeNDAP link\"> OPeNDAP link</a>");
 				}
 				
-				
+				/*
+				 * Add the deployment placemark ballom to the kml document 
+				 */
 				final Placemark placemarkBalloon = new Placemark();
 				placemarkBalloon.setDescription(placemarkBalloonDescription.toString());
 				placemarkBalloon.setStyleUrl("#styleForRegularIcon");
@@ -257,13 +272,20 @@ public class KmlManager {
 				point.setCoordinates(coord);
 				coord.add(new Coordinate(lonBigDecimal.floatValue(), latBigDecimal.floatValue()));
 				
+				/*
+				 * Add the coordinate to the coordinate list. Needed to create the line string, that
+				 * represent the platform trajectory
+				 */
 				coordinateList.add(new Coordinate(lonBigDecimal.floatValue(), latBigDecimal.floatValue()));
 				
+				/*
+				 * 
+				 */
 				TimeSpan ts = new TimeSpan();
 				String beginTimeString = format(date.getTime(), "yyyy-MM-dd HH:mm:ss").replace(" ", "T");
 				ts.setBegin(beginTimeString);
 				
-				//seeking for the next good data index
+				//Seeking for the next good data index
 				int nextGoodDataIdx = ancillaryVariablesMananger.nextGoodDataPositionIdx(i);
 				
 				logger.debug("Next good data " + nextGoodDataIdx);
@@ -286,10 +308,16 @@ public class KmlManager {
 				
 			}
 			
+			/*
+			 * Set first and last posistion icon style
+			 */
 			List<Feature> featureList = document.getFeature();
 			featureList.get(0).setStyleUrl("#styleForHomeIcon");
 			featureList.get(featureList.size() - 1).setStyleUrl("#styleForFinalIcon");
 			
+			/*
+			 * Create the line string 
+			 */
 			final Placemark placemarkLine = new Placemark();
 			document.getFeature().add(placemarkLine);
 			final LineString linestring = new LineString();
@@ -297,8 +325,6 @@ public class KmlManager {
 			linestring.setExtrude(false);
 			linestring.setTessellate(true);
 			linestring.setCoordinates(coordinateList);
-			//Setting up line style
-			
 			placemarkLine.setStyleUrl("#lineStyleId");
 		
 		} finally {
@@ -337,6 +363,9 @@ public class KmlManager {
 		placemarkBalloonDescription.append("<br> <strong>Position: </strong>" + PositionManager.getLatGeoCoordinate(latBigDecimal) + " " + PositionManager.getLonGeoCoordinate(lonBigDecimal));
 		placemarkBalloonDescription.append("<br>");
 		
+		/*
+		 * Add the deployment placemark ballom to the kml document 
+		 */
 		final Placemark placemarkBalloon = new Placemark();
 		placemarkBalloon.setDescription(placemarkBalloonDescription.toString());
 //		placemarkBalloon.setStyleUrl("#styleForHomeIcon");
@@ -346,8 +375,15 @@ public class KmlManager {
 		point.setCoordinates(coord);
 		coord.add(new Coordinate(lonBigDecimal.floatValue(), latBigDecimal.floatValue()));
 		
+		/*
+		 * Add the coordinate to the coordinate list. Needed to create the line string, that
+		 * represent the platform trajectory
+		 */
 		coordinateList.add(new Coordinate(lonBigDecimal.floatValue(), latBigDecimal.floatValue()));
 		
+		/*
+		 * Add the time period to the placemark
+		 */
 		TimeSpan ts = new TimeSpan();
 		String beginTimeString = format(date.getTime(), "yyyy-MM-dd HH:mm:ss").replace(" ", "T");
 		ts.setBegin(beginTimeString);
@@ -357,14 +393,14 @@ public class KmlManager {
 		
 		logger.debug("Next good data " + nextGoodDataIdx);
 		
-		BigDecimal endTimeBigDecimal = new BigDecimal(timeVariable.read().getObject(nextGoodDataIdx).toString());
-		Date endDate = DateUnit.getStandardOrISO(Long.valueOf(endTimeBigDecimal.longValue()) + " " + timeVariable.getUnitsString());
-		String endTimeString = format(endDate.getTime(), "yyyy-MM-dd HH:mm:ss").replace(" ", "T"); 
-		ts.setEnd(endTimeString);
-		
-		ts.setId("timespanId");
-		
-		placemarkBalloon.withTimePrimitive((TimePrimitive) ts);
+		if (1 >= nextGoodDataIdx){
+			BigDecimal endTimeBigDecimal = new BigDecimal(timeVariable.read().getObject(nextGoodDataIdx).toString());
+			Date endDate = DateUnit.getStandardOrISO(Long.valueOf(endTimeBigDecimal.longValue()) + " " + timeVariable.getUnitsString());
+			String endTimeString = format(endDate.getTime(), "yyyy-MM-dd HH:mm:ss").replace(" ", "T"); 
+			ts.setEnd(endTimeString);
+			ts.setId("timespanId");
+			placemarkBalloon.withTimePrimitive((TimePrimitive) ts);
+		}
 		
 		document.getFeature().add(placemarkBalloon);
 		
