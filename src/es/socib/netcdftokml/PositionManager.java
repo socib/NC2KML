@@ -22,20 +22,20 @@ public class PositionManager {
 	public static String getLatGeoCoordinate(BigDecimal lat){
 		
 		if (lat.floatValue() < 0.0){
-			return lat.negate().toPlainString() +  S;
+			return S + lat.negate().toPlainString();
 		}
 		
-		return lat.toEngineeringString() + N;
+		return N + lat.toPlainString();
 		
 	}
 	
 	public static String getLonGeoCoordinate(BigDecimal lon){
 		
 		if (lon.floatValue() < 0.0){
-			return lon.negate().toPlainString() +  W;
+			return W + lon.negate().toPlainString();
 		}
 		
-		return lon.toEngineeringString() + E;
+		return E + lon.toPlainString();
 		
 	}
 

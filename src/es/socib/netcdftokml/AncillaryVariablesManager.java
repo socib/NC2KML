@@ -35,7 +35,11 @@ public class AncillaryVariablesManager {
 	
 	private static String QC_SUFFIX = "_qc";
 	
+	private static String QUALITY_CONTROL_SUFFIX = "_quality_control";
+	
 	private static int PROBABLY_GOOD_DATA = 2;
+	
+//	private static int INTERPOLATED_DATA = 8;
 	
 	private NetcdfDataset netcdfDataset;
 	
@@ -44,6 +48,18 @@ public class AncillaryVariablesManager {
 	private List<Variable> ancillaryVariableList;
 	
 	private Map<Variable, Array> mapVariableAncillaryVariableNames;
+	
+	/**
+	 * qcVariableNameArrayMap Map with the qc variable name as key and the qc variable data as value.
+	 * 					Used to improve the performance.
+	 */
+	private Map<String, Array> qcVariableNameArrayMap;
+	
+	/**
+	 * variableQcVariableMap Map with the variable as key and the qc variable as value.
+	 * 					Used to improve the performance.
+	 */
+	private Map<Variable, Variable> variableQcVariableMap;
 	
 	private Array qcLatVariableArray;
 	
@@ -66,8 +82,12 @@ public class AncillaryVariablesManager {
 	 */
 	public AncillaryVariablesManager(NetcdfDataset netcdfDataset,  Map<AxisType, VariableDS> coordinateAxisMap){
 		
+		//TODO Option to display the interpolated data.
+		
 		this.netcdfDataset = netcdfDataset;
 		this.mapVariableAncillaryVariableNames = new HashMap<Variable, Array>();
+		this.qcVariableNameArrayMap = new HashMap<String, Array>();
+		this.variableQcVariableMap = new HashMap<Variable, Variable>();
 		this.ancillaryVariableList = retrieveAncillaryVariablesWithinTheDataset();
 		this.variableListWithotAncillaryVariables = retrieveVariableListWithoutAncillaryVariables();
 		this.variableListWithotAncillaryVariables.removeAll(netcdfDataset.getCoordinateAxes());
@@ -100,13 +120,14 @@ public class AncillaryVariablesManager {
 		
 		if(null == qcLatVariableArray || null == qcLonVariableArray){
 			latestGoodDataIdx = firstGoodDataIdx = null;
+			return;
 		}
 		
 		this.latestGoodDataIdx = 0;
 		this.firstGoodDataIdx = (int) qcLatVariableArray.getSize();
 		
 		for (int i =  0; i < (int) qcLatVariableArray.getSize(); i++){
-			if (qcLatVariableArray.getInt(i) < PROBABLY_GOOD_DATA || qcLonVariableArray.getInt(i) < PROBABLY_GOOD_DATA){
+			if (isGoodPosition(qcLatVariableArray.getInt(i), qcLonVariableArray.getInt(i))){
 				if (latestGoodDataIdx < i){
 					latestGoodDataIdx = i;
 				}
@@ -137,20 +158,63 @@ public class AncillaryVariablesManager {
 			return nextGoodDataIdx;
 		}
 		
-		Integer qcLatValue;
-		Integer qcLonValue;
 		for (int i = nextGoodDataIdx; i <= latestGoodDataIdx; i ++){
-			qcLatValue = qcLatVariableArray.getInt(nextGoodDataIdx);
-			qcLonValue = qcLonVariableArray.getInt(nextGoodDataIdx);
-			if (qcLatValue >= PROBABLY_GOOD_DATA && qcLonValue >= PROBABLY_GOOD_DATA){
-				nextGoodDataIdx++;
+			
+			if (isGoodPosition(qcLatVariableArray.getInt(nextGoodDataIdx), qcLonVariableArray.getInt(nextGoodDataIdx))){
+				return nextGoodDataIdx;
 			} else {
-				continue;
+				nextGoodDataIdx ++;
 			}
 		}
 		
 		return nextGoodDataIdx;
 	}
+	
+	/**
+	 * If the qc latitude and longitude value are good data then return true.
+	 * Otherwise return false.
+	 * 
+	 * @param qcLatValue the qc latitude value.
+	 * @param qcLonValue the qc longitude value.
+	 * @return true if is good data and otherwise false.
+	 */
+	private boolean isGoodPosition(int qcLatValue, int qcLonValue){
+		
+		if (qcLatValue < PROBABLY_GOOD_DATA && qcLonValue < PROBABLY_GOOD_DATA){
+			return true;
+		}
+		
+//		if (qcLatValue == INTERPOLATED_DATA && qcLonValue == INTERPOLATED_DATA){
+//			return true;
+//		}
+		
+		return false;
+	}
+	
+	/**
+	 * If the position (latitude and longitude variable) at the given index is good data.
+	 * 
+	 * @param ima the given {@link Index}.
+	 * @return true if the position doesn't have quality controls applied or is good position. Otherwise return false.
+	 */
+	public boolean isGoodPosition(Index ima){
+		
+		int i = ima.getCurrentCounter()[0];
+		
+		if( null == qcLatVariableArray || null == qcLonVariableArray){
+			return true;
+		}
+		
+		Byte qcLatValue = qcLatVariableArray.getByte(i);
+		Byte qcLonValue = qcLonVariableArray.getByte(i);
+		
+		if (isGoodPosition(qcLatValue.intValue(), qcLonValue.intValue())){
+			return true;
+		}
+		
+		return false;
+	}
+	
 
 	/**
 	 * Retrieve the {@link Variable} list of ancillary variables in the {@link NetcdfDataset}.
@@ -165,7 +229,7 @@ public class AncillaryVariablesManager {
 			Array ancillaryVariableNames = findAncillaryVariableNames(variable);
 			List<Variable> variableAncillaryVariableList;
 			if (null != ancillaryVariableNames){
-				variableAncillaryVariableList = findAncillaryVariables(ancillaryVariableNames);
+				variableAncillaryVariableList = findAncillaryVariables(variable, ancillaryVariableNames);
 				ancillaryVaraibleList.addAll(variableAncillaryVariableList);
 				mapVariableAncillaryVariableNames.put(variable, ancillaryVariableNames);
 			}
@@ -177,22 +241,34 @@ public class AncillaryVariablesManager {
 
 	/**
 	 * Retrieve the {@link Variable} list of ancillary variables, in the {@link NetcdfDataset},
-	 * from the the given {@link Array} of ancillary variable names
+	 * from the the given {@link Array} of ancillary variable names. Also, if the ancillary variable
+	 * is qc variable then associate the qc variable name with the qc variable {@link Array} 
+	 * (qcVariableNameArrayMap). And associate the variable with the qc variable (variableQcVariableMap)
 	 * 
 	 * @param ancillaryVariableNames the given {@link Array} of ancillary variable names
 	 * @return the {@link Variable} list of ancillary variables
 	 */
-	private List<Variable> findAncillaryVariables(Array ancillaryVariableNames) {
+	private List<Variable> findAncillaryVariables(Variable variable, Array ancillaryVariableNames) {
 		
 		List<Variable> ancillaryVaraibleList = new ArrayList<Variable>();
-		
-		while(ancillaryVariableNames.hasNext()){
-			String ancVarVal = (String) ancillaryVariableNames.next();
-			Variable variable = netcdfDataset.findVariable(ancVarVal);
-			if (null != variable){
-				ancillaryVaraibleList.add(variable);
+		String ancVariableValue = ancillaryVariableNames.toString();
+		String[] ancVariableArray = ancVariableValue.split(" ");
+
+		for (int i = 0; i < ancVariableArray.length; i++){
+			Variable ancVariable = netcdfDataset.findVariable(ancVariableArray[i]);
+			if (null != ancVariable){
+				ancillaryVaraibleList.add(ancVariable);
+				if (isQCVariable(ancVariable.getFullName())){
+					try {
+						qcVariableNameArrayMap.put(ancVariable.getFullName(), ancVariable.read());
+						variableQcVariableMap.put(variable, ancVariable);
+					} catch (IOException e) {
+						logger.error("Impossible read the variable data of " + ancVariable.getFullName());
+						e.printStackTrace();
+					}
+				}
 			} else {
-				logger.error("Ancillary variable " + ancVarVal + " isn't in the NetCDF dataset " + netcdfDataset.getLocation());
+				logger.error("Ancillary variable " + ancVariableArray + " isn't in the NetCDF dataset " + netcdfDataset.getLocation());
 			}
 		}
 		
@@ -268,21 +344,20 @@ public class AncillaryVariablesManager {
 	 */
 	private static String findQCAncillaryVariableName(Array ancillaryVariablesValues){
 		
-		if (null == ancillaryVariablesValues){
+		if (null == ancillaryVariablesValues || "".equals(ancillaryVariablesValues)){
 			return null;
 		}
 		
 		String ancillaryVariableName = null;
-		int i = 0;
+		String[] ancVariableArray = ancillaryVariablesValues.toString().split(" ");
 		int numberOfQCNames = 0;
-		while(i < ancillaryVariablesValues.getSize()){
+		for (int i = 0; i < ancVariableArray.length; i ++){
 			
-			String ancVarVal = (String) ancillaryVariablesValues.getObject(i).toString();
+			String ancVarVal = ancVariableArray[i].toString();
 			if (isQCVariable(ancVarVal)){
 				ancillaryVariableName = ancVarVal;
 				numberOfQCNames++;
 			}
-			i++;
 			
 		}
 		
@@ -306,23 +381,26 @@ public class AncillaryVariablesManager {
 	 */
 	private String findQCNameFromVariableName(String variableName){
 		
-		Variable qcVaraible = netcdfDataset.findVariable(variableName + QC_SUFFIX);
-		if (null != qcVaraible){
-			return qcVaraible.getFullName();
+		Variable qcVariable = netcdfDataset.findVariable(variableName + QC_SUFFIX);
+		if (null != qcVariable){
+			return qcVariable.getFullName();
 		}
-		qcVaraible = netcdfDataset.findVariable(variableName + QC_SUFFIX.toUpperCase());
-		if (null != qcVaraible){
-			return qcVaraible.getFullName();
+		qcVariable = netcdfDataset.findVariable(variableName + QC_SUFFIX.toUpperCase());
+		if (null != qcVariable){
+			return qcVariable.getFullName();
 		}
-		qcVaraible = netcdfDataset.findVariable(QC_PREFIX + variableName);
-		if (null != qcVaraible){
-			return qcVaraible.getFullName();
+		qcVariable = netcdfDataset.findVariable(QC_PREFIX + variableName);
+		if (null != qcVariable){
+			return qcVariable.getFullName();
 		}
-		qcVaraible = netcdfDataset.findVariable(QC_PREFIX.toUpperCase() + variableName);
-		if (null != qcVaraible){
-			return qcVaraible.getFullName();
+		qcVariable = netcdfDataset.findVariable(QC_PREFIX.toUpperCase() + variableName);
+		if (null != qcVariable){
+			return qcVariable.getFullName();
 		}
-		
+		qcVariable = netcdfDataset.findVariable(variableName + QUALITY_CONTROL_SUFFIX);
+		if (null != qcVariable){
+			return qcVariable.getFullName();
+		}
 		return null;
 	}
 	
@@ -360,35 +438,11 @@ public class AncillaryVariablesManager {
 	 */
 	public static boolean isQCVariable(String variableName){
 		
-		if (variableName.toLowerCase().contains(QC_SUFFIX) || variableName.toLowerCase().contains(QC_PREFIX)){
+		if (variableName.toLowerCase().contains(QC_SUFFIX) || variableName.toLowerCase().contains(QC_PREFIX) || variableName.toLowerCase().contains(QUALITY_CONTROL_SUFFIX)){
 			return true;
 		}
 		
 		return false;
-	}
-	
-	/**
-	 * If the position (latitude and longitude variable) at the given index is good data.
-	 * 
-	 * @param ima the given {@link Index}.
-	 * @return true if the position doesn't have quality controls applied or is good position. Otherwise return false.
-	 */
-	public boolean isGoodDataPosition(Index ima){
-		
-		int i = ima.getCurrentCounter()[0];
-		
-		if( null == qcLatVariableArray || null == qcLonVariableArray){
-			return true;
-		}
-		
-		Byte qcLatValue = qcLatVariableArray.getByte(i);
-		Byte qcLonValue = qcLonVariableArray.getByte(i);
-		
-		if (qcLatValue.intValue() >= PROBABLY_GOOD_DATA || qcLonValue.intValue() >= PROBABLY_GOOD_DATA){
-			return false;
-		}
-		
-		return true;
 	}
 	
 	/**
@@ -400,13 +454,13 @@ public class AncillaryVariablesManager {
 	 */
 	public boolean isGoodDataVariable(Variable variable, Index index){
 		
-		String qcVariableName = findQCAncillaryVariableName(mapVariableAncillaryVariableNames.get(variable));
+		Variable qcVariable = variableQcVariableMap.get(variable);
 		
-		if (null == qcVariableName){
+		if (null == qcVariable){
 			return true;
 		}
 		
-		Array qcVariableArray = readVariable(qcVariableName);
+		Array qcVariableArray = qcVariableNameArrayMap.get(qcVariable.getFullName());
 		if (PROBABLY_GOOD_DATA <= qcVariableArray.getInt(index)){
 			return false;
 		}

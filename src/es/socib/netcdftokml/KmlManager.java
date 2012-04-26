@@ -66,11 +66,17 @@ public class KmlManager {
 	
 	private Map<AxisType, VariableDS> coordinateVariableMap;
 	
+	/**
+	 * variableArrayMap Map with the variable as key and the variable data as value.
+	 * 					Used to improve the performance.
+	 */
+	private Map<Variable, Array> variableArrayMap;
+	
 	private String netCdfFileLocation;
 
 	/**
 	 * Constructs a new {@link KmlManager}. The NetCDF file must be compliant with the following specification:
-	 * 		Must have the featureType global attribute with value trajectory or trajectoryProfile.
+	 * 		Should have the featureType global attribute with value trajectory or trajectoryProfile.
 	 * 		Must have only one time coordinate ({@link AxisType}.Time) of one dimension.
 	 * 		Must have only one latitude coordinate ({@link AxisType}.Lat) with the same dimension as the time coordinate.
 	 * 		Must have only one longitude coordinate ({@link AxisType}.Lon) with the same dimension as the time coordinate.
@@ -125,6 +131,7 @@ public class KmlManager {
 			
 			// Retrieve the variable list whitout the ancillary variable
 			variableListWithoutAncillaryVariables = ancillaryVariablesMananger.getVariableListWithotAncillaryVariables();
+			
 //			variableListWithoutAncillaryVariables.removeAll(netcdfDataset.getCoordinateAxes());
 			
 //			ancillaryVariableList = ancillaryVariablesMananger.getAncillaryVariableList();
@@ -134,6 +141,8 @@ public class KmlManager {
 			if (null != cfRole){
 				variableListWithoutAncillaryVariables.remove(cfRole);
 			}
+			
+			initializeVariableArrayMap();
 			
 			logger.info("Kml manager initialiced");
 
@@ -148,6 +157,26 @@ public class KmlManager {
 		}
 	}
 	
+	/**
+	 * Initialize the map with variable as key and array data as value
+	 */
+	private void initializeVariableArrayMap() {
+		
+		variableArrayMap = new HashMap<Variable, Array>();
+		
+		for (Variable variable : variableListWithoutAncillaryVariables){
+
+			try {
+				variableArrayMap.put(variable, variable.read());
+			} catch (IOException e) {
+				logger.error("Impossible read the variable data of " + variable.getFullName());
+				e.printStackTrace();
+			}
+			
+		}
+
+	}
+
 	/**
 	 * Create a {@link Kml} object representation of the NetCDF file of type trajectory or trajectoryProfile.
 	 * 
@@ -215,16 +244,26 @@ public class KmlManager {
 			for (int i = firstGoodDataIdx; i <= latestGoodDataIdx; i++){
 				
 				// It doesn't add to the kml bad positions
-				if (!ancillaryVariablesMananger.isGoodDataPosition(timeIndex1D)){
+				if (!ancillaryVariablesMananger.isGoodPosition(timeIndex1D)){
 					logger.debug("Bad data");
 					timeIndex1D.incr();
 					continue;
 				}
 				
-				BigDecimal timeBigDecimal = new BigDecimal(timeArrayData.getObject(timeIndex1D).toString());
+				String timeString = timeArrayData.getObject(timeIndex1D).toString();
+				String lonString = lonArrayData.getObject(timeIndex1D).toString();
+				String latString = latArrayData.getObject(timeIndex1D).toString();
+				
+				if ("NaN".equals(latString) || "NaN".equals(lonString)){
+					//logger.warn("The latitude or longitude value is NaN");
+					timeIndex1D.incr();
+					continue;
+				}
+				
+				BigDecimal timeBigDecimal = new BigDecimal(timeString);
 				Date date = DateUnit.getStandardOrISO(Long.valueOf(timeBigDecimal.longValue()) + " " + timeVariable.getUnitsString());
-				BigDecimal lonBigDecimal = new BigDecimal(lonArrayData.getObject(timeIndex1D).toString());
-				BigDecimal latBigDecimal = new BigDecimal(latArrayData.getObject(timeIndex1D).toString());
+				BigDecimal lonBigDecimal = new BigDecimal(lonString);
+				BigDecimal latBigDecimal = new BigDecimal(latString);
 				
 				// Add the header description (Title, time and position)
 				StringBuffer placemarkBalloonDescription = new StringBuffer();
@@ -237,6 +276,8 @@ public class KmlManager {
 				
 				// Add the variable name and current value to the description
 				for (Variable variable : variableListWithoutAncillaryVariables){
+					
+					logger.debug("Variable: " + variable.getFullName());
 					
 					String data;
 					try {
@@ -423,7 +464,7 @@ public class KmlManager {
 	 */
 	private String readDataLike1D(Variable variable, Index timeIndex1D) throws IOException {
 		
-		Array dataVariable = variable.read();
+		Array dataVariable = variableArrayMap.get(variable);
 		Index variableIndex;
 		String stringDataWithUnits;
 		
@@ -439,6 +480,8 @@ public class KmlManager {
 			variableIndex.set(stride);
 			
 			stringDataWithUnits = dataVariable.getObject(variableIndex).toString() + formatUnits(variable.getUnitsString());
+			
+//			stringDataWithUnits = ((ArrayDouble.D1) dataVariable).get(variableIndex) + formatUnits(variable.getUnitsString());
 			
 		} else if (2 == dataVariable.getShape().length){
 			
@@ -557,7 +600,7 @@ public class KmlManager {
 
 	/**
 	 * The NetCDF file must be compliant with the following specification:
-	 * 		Must have the featureType global attribute with value trajectory or trajectoryProfile.
+	 * 		Should have the featureType global attribute with value trajectory or trajectoryProfile.
 	 * 		Must have only one time coordinate ({@link AxisType}.Time) of one dimension.
 	 * 		Must have only one latitude coordinate ({@link AxisType}.Lat) with the same dimension as the time coordinate.
 	 * 		Must have only one longitude coordinate ({@link AxisType}.Lon) with the same dimension as the time coordinate.
@@ -568,12 +611,15 @@ public class KmlManager {
 	private static void checkFile(NetcdfDataset netCdfFile) throws KmlManagerException {
 		
 		if (null == netCdfFile.findGlobalAttribute(FEATURE_TYPE)){
-			throw new KmlManagerException("The Netcdf file doesn't have the featureType global attribute ");
-		}
+			logger.warn("The Netcdf file doesn't have the featureType global attribute ");
+			
+		} else {
 		
-		String featureType = netCdfFile.findGlobalAttribute(FEATURE_TYPE).getValue(0).toString();
-		if (!FT_TRAJECTORY.equals(featureType) && !FT_TRAJECTORY_PROFILE.equals(featureType)){
-			throw new KmlManagerException("The featureType global attribute must be trajectory or trajectoryProfile.");
+			String featureType = netCdfFile.findGlobalAttribute(FEATURE_TYPE).getValue(0).toString();
+			if (!FT_TRAJECTORY.equals(featureType) && !FT_TRAJECTORY_PROFILE.equals(featureType)){
+				logger.warn("The featureType global attribute must be trajectory or trajectoryProfile.");
+			}
+			
 		}
 		
 		Variable timeVariable = netCdfFile.findCoordinateAxis(AxisType.Time);
