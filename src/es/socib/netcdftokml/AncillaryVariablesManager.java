@@ -37,6 +37,8 @@ public class AncillaryVariablesManager {
 	
 	private static String QUALITY_CONTROL_SUFFIX = "_quality_control";
 	
+	private static String QUALITY_CONTROL_PREFIX = "quality_control_";
+	
 	private static int PROBABLY_GOOD_DATA = 2;
 	
 //	private static int INTERPOLATED_DATA = 8;
@@ -398,6 +400,10 @@ public class AncillaryVariablesManager {
 			return qcVariable.getFullName();
 		}
 		qcVariable = netcdfDataset.findVariable(variableName + QUALITY_CONTROL_SUFFIX);
+		if (null != qcVariable){
+			return qcVariable.getFullName();
+		}
+		qcVariable = netcdfDataset.findVariable(QUALITY_CONTROL_PREFIX + variableName);
 		if (null != qcVariable){
 			return qcVariable.getFullName();
 		}
