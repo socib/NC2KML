@@ -481,8 +481,6 @@ public class KmlManager {
 			
 			stringDataWithUnits = dataVariable.getObject(variableIndex).toString() + formatUnits(variable.getUnitsString());
 			
-//			stringDataWithUnits = ((ArrayDouble.D1) dataVariable).get(variableIndex) + formatUnits(variable.getUnitsString());
-			
 		} else if (2 == dataVariable.getShape().length){
 			
 			coordinateSystemsList = ((VariableDS) variable).getCoordinateSystems();
