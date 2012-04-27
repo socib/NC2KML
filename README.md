@@ -11,4 +11,4 @@ Library depencies to compile NC2KML from source code are:
 * netcdfAll-4.3.jar
 * commons-lang-2.5.jar
 
-More information at the NC2KML wiki https://github.com/ksebastian/NC2KML/wiki
+More information at the NC2KML wiki https://github.com/socib/NC2KML/wiki
