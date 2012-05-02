@@ -444,7 +444,8 @@ public class AncillaryVariablesManager {
 	 */
 	public static boolean isQCVariable(String variableName){
 		
-		if (variableName.toLowerCase().contains(QC_SUFFIX) || variableName.toLowerCase().contains(QC_PREFIX) || variableName.toLowerCase().contains(QUALITY_CONTROL_SUFFIX)){
+		if (variableName.toLowerCase().contains(QC_SUFFIX) || variableName.toLowerCase().contains(QC_PREFIX) 
+				|| variableName.toLowerCase().contains(QUALITY_CONTROL_SUFFIX)){
 			return true;
 		}
 		
