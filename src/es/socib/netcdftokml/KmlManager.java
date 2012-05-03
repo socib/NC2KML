@@ -68,7 +68,7 @@ public class KmlManager {
 	
 	/**
 	 * variableArrayMap Map with the variable as key and the variable data as value.
-	 * 					Used to improve the performance.
+	 * 					Used to improve the performance.	
 	 */
 	private Map<Variable, Array> variableArrayMap;
 	
@@ -86,19 +86,19 @@ public class KmlManager {
 	 * 		The kml style info (Kml title name, data format pattern, line style color, template path and home, regular and end icon sytle)
 	 * 		The opendap link of the kml data
 	 * 
-	 * @param netCdfFileLocation the NetCDF file location, can be a local file or opendap link
+	 * @param netCDFDataSet the NetCDF file location, can be a local file or opendap link
 	 * @param additionalInfo the additional info provided. If null the default values will be provided to the kml manager.
 	 * @throws IOException 
 	 */
-	public KmlManager(String netCdfFileLocation, AdditionalInfo additionalInfo) throws IOException {
+	public KmlManager(NetcdfDataset netCDFDataSet, AdditionalInfo additionalInfo) throws IOException {
 		
 		try {
 			
 			logger.info("Initializing the Kml manager");
 			
 			// Open the NetCDF file
-			this.netCdfFileLocation = netCdfFileLocation;
-			netcdfDataset = NetcdfDataset.openDataset(this.netCdfFileLocation);
+			this.netCdfFileLocation = netCDFDataSet.getLocation();
+			netcdfDataset = netCDFDataSet;
 		
 			// Check that the files is compliant with the defined specifications
 			checkFile(netcdfDataset);
@@ -146,10 +146,6 @@ public class KmlManager {
 			
 			logger.info("Kml manager initialiced");
 
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			netcdfDataset.close();
 		} catch (KmlManagerException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
