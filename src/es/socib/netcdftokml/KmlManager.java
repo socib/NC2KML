@@ -19,7 +19,9 @@ import ucar.ma2.Array;
 import ucar.ma2.Index;
 import ucar.ma2.Index1D;
 import ucar.ma2.Index2D;
+import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
+import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import ucar.nc2.constants.AxisType;
 import ucar.nc2.dataset.CoordinateAxis;
@@ -189,10 +191,12 @@ public class KmlManager {
 	 */
 	public Kml createKMLFile() throws KmlManagerException, IOException {
 		
-		final Kml kml;
+		Kml kml = null;
 
 		try {
 			
+			
+//			NetcdfFile netcdfFile = NetcdfFile.open(net);
 			
 			// Create and initialize the kml object
 			kml = new Kml();
@@ -209,8 +213,13 @@ public class KmlManager {
 			Variable lonVariable = coordinateVariableMap.get(AxisType.Lon);
 			Variable latVariable = coordinateVariableMap.get(AxisType.Lat);
 			Array timeArrayData = timeVariable.read();
-			Array lonArrayData = lonVariable.read();
-			Array latArrayData = latVariable.read();
+			
+			// I don't know why but if NetcdfDataset is used to read the 
+			// latitude and longitude variable, then NaN values are read
+			// in  some files. (Socib argo profiles).
+			NetcdfFile netcdfFile = NetcdfFile.open(netCdfFileLocation);
+			Array lonArrayData = netcdfFile.readSection(lonVariable.getFullName());
+			Array latArrayData = netcdfFile.readSection(latVariable.getFullName());
 			
 			// The coordinate list needed to generate the line string. Represent the platform trajectory.
 			List<Coordinate> coordinateList = new ArrayList<Coordinate>();
@@ -345,25 +354,37 @@ public class KmlManager {
 				
 			}
 			
-			/*
-			 * Set first and last posistion icon style
-			 */
-			List<Feature> featureList = document.getFeature();
-			featureList.get(0).setStyleUrl("#styleForHomeIcon");
-			featureList.get(featureList.size() - 1).setStyleUrl("#styleForFinalIcon");
 			
-			/*
-			 * Create the line string 
-			 */
-			final Placemark placemarkLine = new Placemark();
-			document.getFeature().add(placemarkLine);
-			final LineString linestring = new LineString();
-			placemarkLine.setGeometry(linestring);
-			linestring.setExtrude(false);
-			linestring.setTessellate(true);
-			linestring.setCoordinates(coordinateList);
-			placemarkLine.setStyleUrl("#lineStyleId");
+			if (document.getFeature().size() > 0){
+			
+				/*
+				 * Set first and last posistion icon style
+				 */
+				List<Feature> featureList = document.getFeature();
+				featureList.get(0).setStyleUrl("#styleForHomeIcon");
+				featureList.get(featureList.size() - 1).setStyleUrl("#styleForFinalIcon");
+				
+				/*
+				 * Create the line string 
+				 */
+				final Placemark placemarkLine = new Placemark();
+				document.getFeature().add(placemarkLine);
+				final LineString linestring = new LineString();
+				placemarkLine.setGeometry(linestring);
+				linestring.setExtrude(false);
+				linestring.setTessellate(true);
+				linestring.setCoordinates(coordinateList);
+				placemarkLine.setStyleUrl("#lineStyleId");
+				
+			} else {
+				
+				logger.error("createKMLFile() -- The kml documents doesm't have features");
+				
+			}
 		
+		} catch (InvalidRangeException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} finally {
 			
 			netcdfDataset.close();

@@ -42,11 +42,11 @@ public class Testing {
 	    }
 		PropertyConfigurator.configure(properties);
 			
-//		String netCdfFileLocation = "/home/ksebastian/opendap/observational/drifter/profiler_drifter/argo_drifter_apex001-ime_apex001/L1/2012/dep0001_argo-drifter-apex001_ime-apex001_L1_2012-03-11.nc";
-//		String kmlFileLocation = "/home/ksebastian/workspace/processing_web_files/dep0001_argo-drifter-apex001_ime-apex001_L1_2012-03-11.kmz";
+		String netCdfFileLocation = "/home/ksebastian/argo_drifter_apex001-ime_apex001/L1/2012/dep0001_argo-drifter-apex001_ime-apex001_L1_2012-03-11.nc";
+		String kmlFileLocation = "/home/ksebastian/workspace/processing_web_files/dep0001_argo-drifter-apex001_ime-apex001_L1_2012-03-11.kmz";
 	    
-		String netCdfFileLocation = "/data/current/opendap/observational/drifter/surface_drifter/drifter_svp003-ime_svp003/L1/2011/dep0001_drifter-svp003_ime-svp003_L1_2011-09-08.nc";
-		String kmlFileLocation = "/home/ksebastian/workspace/processing_web_files/dep0001_drifter-svp003_ime-svp003_L1_2011-09-08.kmz";
+//		String netCdfFileLocation = "/data/current/opendap/observational/drifter/surface_drifter/drifter_svp003-ime_svp003/L1/2011/dep0001_drifter-svp003_ime-svp003_L1_2011-09-08.nc";
+//		String kmlFileLocation = "/home/ksebastian/workspace/processing_web_files/dep0001_drifter-svp003_ime-svp003_L1_2011-09-08.kmz";
 		
 //		String netCdfFileLocation = "/data/current/opendap/observational/auv/glider/seaglider_sdeep002-scb_sdeep002/L1/2012/dep0001_seaglider-sdeep002_scb-sdeep002_L1_2012-03-12.nc";
 //		String kmlFileLocation = "/home/ksebastian/workspace/processing_web_files/dep0001_seaglider-sdeep002_scb-sdeep002_L1_2012-03-12.kmz";
