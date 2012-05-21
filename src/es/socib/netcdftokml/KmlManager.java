@@ -282,13 +282,11 @@ public class KmlManager {
 				// Add the variable name and current value to the description
 				for (Variable variable : variableListWithoutAncillaryVariables){
 					
-					logger.debug("Variable: " + variable.getFullName());
-					
 					String data;
 					try {
 						data = readDataLike1D(variable, timeIndex1D);
 					} catch (NullPointerException e){
-						logger.error(e.getMessage());
+						logger.error("createKMLFile() -- Null pointer exception reading " + variable.getFullName());
 						continue;
 					} catch (IOException e){
 						logger.error(e.getMessage());
@@ -496,7 +494,9 @@ public class KmlManager {
 			int[] stride = {currentIndex0};
 			variableIndex.set(stride);
 			
-			stringDataWithUnits = dataVariable.getObject(variableIndex).toString() + formatUnits(variable.getUnitsString());
+			Object obj = dataVariable.getObject(variableIndex);
+			
+			stringDataWithUnits = dataVariable.getObject(variableIndex).toString() + formatUnits(variable);
 			
 		} else if (2 == dataVariable.getShape().length){
 			
@@ -520,11 +520,11 @@ public class KmlManager {
 				int[] coordinateStride = {currentIndex0};
 				coorinateIndex.set(coordinateStride);
 				
-				stringDataWithUnits = dataVariable.getObject(variableIndex).toString() + formatUnits(variable.getUnitsString()) + " at " + coordinateAxis.read().getObject(coorinateIndex).toString() + coordinateAxis.getUnitsString();
+				stringDataWithUnits = dataVariable.getObject(variableIndex).toString() + formatUnits(variable) + " at " + coordinateAxis.read().getObject(coorinateIndex).toString() + coordinateAxis.getUnitsString();
 				
 			} else if (2 == coordinateAxis.getShape().length) {
 				
-				stringDataWithUnits = dataVariable.getObject(variableIndex).toString() + formatUnits(variable.getUnitsString()) + " at " + coordinateAxis.read().getObject(variableIndex).toString() + coordinateAxis.getUnitsString();
+				stringDataWithUnits = dataVariable.getObject(variableIndex).toString() + formatUnits(variable) + " at " + coordinateAxis.read().getObject(variableIndex).toString() + coordinateAxis.getUnitsString();
 				
 			} else {
 				
@@ -560,7 +560,13 @@ public class KmlManager {
 	 * @param units the units
 	 * @return the units formatted
 	 */
-	private String formatUnits(String units){
+	private String formatUnits(Variable variable){
+		
+		String units = variable.getUnitsString();
+		
+		if (null == units){
+			return "";
+		}
 		
 		if ("1".equals(units.trim()) || "".equals(units.trim())){
 			return "";
