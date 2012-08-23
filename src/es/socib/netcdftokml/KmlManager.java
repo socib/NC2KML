@@ -494,8 +494,6 @@ public class KmlManager {
 			int[] stride = {currentIndex0};
 			variableIndex.set(stride);
 			
-			Object obj = dataVariable.getObject(variableIndex);
-			
 			stringDataWithUnits = dataVariable.getObject(variableIndex).toString() + formatUnits(variable);
 			
 		} else if (2 == dataVariable.getShape().length){

@@ -44,11 +44,13 @@ public class DeploymentInfo {
 	}
 	
 	public static DeploymentInfo createDeploymentInfo(String time, String longitude, String latitude){
+		
 		if (null == time || null == longitude || null == latitude){
 			logger.warn("createDeploymentInfo() -- One or more of the needed parameters are null. Null DeploymentInfo was returned"); 
 			return null;
-		}else
-			return new DeploymentInfo(time, longitude, latitude);
+		}
+		
+		return new DeploymentInfo(time, longitude, latitude);
 	}
 
 	public String getTime() {
