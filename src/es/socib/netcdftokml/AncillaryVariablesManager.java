@@ -71,6 +71,8 @@ public class AncillaryVariablesManager {
 
 	private Integer firstGoodDataIdx;
 	
+	private Boolean onlyGoodData = true;
+	
 	/**
 	 * Constructs a new {@link AncillaryVariablesManager}. Initialize:
 	 * 		The latitude and longitude quality control array data.
@@ -488,12 +490,21 @@ public class AncillaryVariablesManager {
 	}
 
 	public Integer getLastestGoodDataIdx() {
-		return latestGoodDataIdx;
+		
+		if (onlyGoodData){
+			return latestGoodDataIdx;
+		}
+		
+		return (int) qcLatVariableArray.getSize() - 1;
 	}
 	
 	public Integer getFirstGoodDataIdx() {
-		// TODO Auto-generated method stub
-		return firstGoodDataIdx;
+		
+		if (onlyGoodData){
+			return firstGoodDataIdx;
+		}
+		
+		return 0;
 	}
 
 }
