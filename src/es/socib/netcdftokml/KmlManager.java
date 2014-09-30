@@ -42,7 +42,7 @@ import de.micromata.opengis.kml.v_2_2_0.TimeSpan;
 /**
  * @author slora
  */
-public class KmlManager {
+public class KmlManager implements Runnable {
 	
 	
 	/**
@@ -75,6 +75,8 @@ public class KmlManager {
 	private Map<Variable, Array> variableArrayMap;
 	
 	private String netCdfFileLocation;
+	
+	private String outputFileName;
 
 	/**
 	 * Constructs a new {@link KmlManager}. The NetCDF file must be compliant with the following specification:
@@ -90,13 +92,16 @@ public class KmlManager {
 	 * 
 	 * @param netCDFDataSet the NetCDF file location, can be a local file or opendap link
 	 * @param additionalInfo the additional info provided. If null the default values will be provided to the kml manager.
+	 * @param outputFileName 
 	 * @throws IOException 
 	 */
-	public KmlManager(NetcdfDataset netCDFDataSet, AdditionalInfo additionalInfo) throws IOException {
+	public KmlManager(NetcdfDataset netCDFDataSet, AdditionalInfo additionalInfo, String outputFileName) throws IOException{
 		
 		try {
 			
 			logger.info("Initializing the Kml manager");
+			
+			this.outputFileName = outputFileName;
 			
 			// Open the NetCDF file
 			this.netCdfFileLocation = netCDFDataSet.getLocation();
@@ -660,6 +665,20 @@ public class KmlManager {
 	 */
 	public static String format(long time, String pattern ){
 		return DateFormatUtils.format(time, pattern, TimeZone.getTimeZone("GMT0"));
+		
+	}
+
+	@Override
+	public void run() {
+		try {
+			this.createKMLFile().marshalAsKmz(outputFileName);
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+			e.printStackTrace();
+		} catch (KmlManagerException e) {
+			logger.error(e.getMessage());
+			e.printStackTrace();
+		}
 		
 	}
 	

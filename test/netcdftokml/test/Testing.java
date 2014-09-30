@@ -9,9 +9,7 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import ucar.nc2.NetcdfFile;
 import ucar.nc2.dataset.NetcdfDataset;
-
 import es.socib.netcdftokml.AdditionalInfo;
 import es.socib.netcdftokml.DeploymentInfo;
 import es.socib.netcdftokml.KmlManager;

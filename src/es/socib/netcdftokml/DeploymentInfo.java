@@ -14,6 +14,7 @@ public class DeploymentInfo {
 	/**
 	 * logger the logger instance
 	 */
+	@SuppressWarnings("unused")
 	private static Logger logger = Logger.getLogger("processing");
 	/**
 	 * time The String time in UDUNITS format "n seconds since YYYY-MM-DD HH:MM:SS" 
