@@ -64,7 +64,7 @@ public class Testing {
 		try {
 			DeploymentInfo deploymentInfo = DeploymentInfo.createDeploymentInfo("1 day since 2011-09-07 00:00:00", "3.400", "39.200");
 			AdditionalInfo additionalInfo = new AdditionalInfo(deploymentInfo, null, null, false);
-			KmlManager kmlManager = new KmlManager(NetcdfDataset.openDataset(netCdfFileLocation), additionalInfo);
+			KmlManager kmlManager = new KmlManager(NetcdfDataset.openDataset(netCdfFileLocation), additionalInfo, kmlFileLocation);
 			kmlManager.createKMLFile().marshalAsKmz(kmlFileLocation);
 		} catch (KmlManagerException e) {
 			// TODO Auto-generated catch block
