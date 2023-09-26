@@ -1,0 +1,64 @@
+{
+  "_class": "Software",
+  "alias": "https://github.com/socib/NC2KML",
+  "abstract": "The NC2KML tool is a Java library, developed by SOCIB, to generate a KML file from a NetCDF file with trajectory data.",
+  "author": {
+    "_class": "Organization",
+    "alias": "https://edmo.seadatanet.org/report/3410"
+  },
+  "created": "2012-04-19",
+  "contributor": [
+    {
+      "_class": "Person",
+      "name": "Kristian Sebastian"
+    },
+    {
+      "_class": "Person",
+      "name": "Sebastián Lora"
+    },
+    {
+      "_class": "Person",
+      "name": "Juan Gabriel Fernandez <jfernandez@socib.es>"
+    }
+  ],
+  "description": "The NC2KML tool is a Java library, developed by SOCIB, to generate a KML file from a NetCDF file with trajectory data. The output KML generated contains one placemark with the corresponding icon style for each position. The placemark has a balloon with the following information: the position date (format pattern can be provided in the KML style information), the position in geographical coordinates degrees, data values at the current position (data can be of one dimension (time) or two dimensions (time and level)), Opendap link to access and download the data in NetCDF if exists. Also, each placemark has definied a time period, that has the effect of restricting the visibility of the placemark. To represents the platform trajectory, a line string is created with the line style color defined in the KML style information.",
+  "distribution": {
+    "_class": "Distribution",
+    "accessURL": "https://github.com/socib/NC2KML"
+  },
+  "downloadURL": "https://github.com/socib/NC2KML/archive/refs/heads/master.zip",
+  "keywords": [
+    "java",
+    "netcdf",
+    "kml",
+    "trajectory-data",
+    "physical-oceanography",
+    "ocean-sciences",
+    "seaglider",
+    "profiler-drifter",
+    "surface-drifter",
+    "data-preservation",
+    "seaexplorer",
+    "socib"
+  ],
+  "language": ["English"],
+  "license": "Copyright (C) 2013-2023 ICTS SOCIB - Servei d'observació i predicció costaner de les Illes Balears http://www.socib.es\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses/.",
+  "modified": "2017-07-07",
+  "name": "NC2KML",
+  "organization": {
+    "_class": "Organization",
+    "alias": "https://edmo.seadatanet.org/report/3410"
+  },
+  "owner": {
+    "_class": "Organization",
+    "alias": "https://edmo.seadatanet.org/report/3410"
+  },
+  "publisher": {
+    "_class": "Organization",
+    "alias": "https://edmo.seadatanet.org/report/3410"
+  },
+  "published": "2012-04-19",
+  "programming_language": ["Java"],
+  "url": "https://github.com/socib/NC2KML",
+  "version": "v1.0.3"
+}
